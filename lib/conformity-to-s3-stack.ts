@@ -4,25 +4,62 @@ import * as s3 from '@aws-cdk/aws-s3';
 import * as iam from '@aws-cdk/aws-iam';
 import * as sns from '@aws-cdk/aws-sns';
 import * as sqs from '@aws-cdk/aws-sqs';
+import * as kms from '@aws-cdk/aws-kms';
 import * as snsEventSource from '@aws-cdk/aws-lambda-event-sources';
 
-export class ConformityToSplunkStack extends cdk.Stack {
+const CONFORMITY_AWS_ACCOUNT = 717210094962;
+
+export class ConformityToS3Stack extends cdk.Stack {
   constructor(scope: cdk.Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    const existingTopicArn = new cdk.CfnParameter(this, "existingTopicArn", {
-      type: 'String',
-      description: 'The existing SNS topic ARN.',
+    const bucket = new s3.Bucket(this, 'conformity-to-s3-bucketr', {
     });
 
-    const bucket = new s3.Bucket(this, 'conformity-to-splunk-s3', {
+    const key = new kms.Key(this, 'conformity-to-s3-key', {
+      alias: 'CloudConformitySNSEncryptionKey',
+      description: 'CloudConformitySNSEncryptionKey',
+      policy: new iam.PolicyDocument({
+        statements: [ new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          principals: [
+            new iam.AccountPrincipal(CONFORMITY_AWS_ACCOUNT)
+          ],
+          actions: [
+            'kms:Encrypt',
+            'kms:Decrypt',
+            'kms:ReEncrypt*',
+            'kms:GenerateDataKey*',
+            'kms:DescribeKey'
+          ],
+          resources: [
+            '*'
+          ]
+        })]
+      })
+    })
 
-    });
+    const topic = new sns.Topic(this, 'conformity-to-s3-topic', {
+      displayName: 'CloudConformity',
+      masterKey: key,
+      topicName: 'CloudConformity',
+    }); 
+    topic.addToResourcePolicy(new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      principals: [
+        new iam.AccountPrincipal(CONFORMITY_AWS_ACCOUNT)
+      ],
+      actions: [
+        'SNS:Publish'
+      ],
+      resources: [
+        topic.topicArn
+      ]
+    }));
 
-    const topic = sns.Topic.fromTopicArn(this, 'conformity-to-splunk-topic', existingTopicArn.valueAsString); 
     const deadLetterQueue = new sqs.Queue(this, 'deadLetterQueue');
 
-    const func = new lambda.Function(this, 'conformity-to-splunk-function', {
+    const func = new lambda.Function(this, 'conformity-to-s3-function', {
       runtime: lambda.Runtime.NODEJS_12_X,
       handler: 'index.handler',
       environment: {
@@ -71,9 +108,15 @@ export class ConformityToSplunkStack extends cdk.Stack {
       deadLetterQueue: deadLetterQueue
     }));
 
-    new cdk.CfnOutput(this, "BucketForSplunkIntegration", {
+    new cdk.CfnOutput(this, "EventsBucket", {
       value: bucket.bucketName,
-      description: 'Bucket name to be used for Splunk integration'
+      description: 'Bucket name that hosts all events'
     });
+
+    new cdk.CfnOutput(this, "TopicARN", {
+      value: topic.topicArn,
+      description: 'SNS Topic ARN to be used in Conformity dashboard'
+    });
+
   }
 }

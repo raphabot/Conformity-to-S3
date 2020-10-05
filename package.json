@@ -1,8 +1,8 @@
 {
-  "name": "conformity-to-splunk",
+  "name": "conformity-to-s3",
   "version": "0.1.0",
   "bin": {
-    "conformity-to-splunk": "bin/conformity-to-splunk.js"
+    "conformity-to-s3": "bin/conformity-to-s3.js"
   },
   "scripts": {
     "build": "tsc",

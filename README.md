@@ -1,8 +1,10 @@
-# Welcome to your CDK TypeScript project!
+# Conformity-to-S3
 
-This is a blank project for TypeScript development with CDK.
+Conformity-to-S3 is a CDK project to deploy all the required resources to move data from Conformity to S3, enabling further integration with other services, such as Splunk.
 
-The `cdk.json` file tells the CDK Toolkit how to execute your app.
+## Installation
+
+Clone the project.
 
 ## Useful commands
 
@@ -12,3 +14,12 @@ The `cdk.json` file tells the CDK Toolkit how to execute your app.
  * `cdk deploy`      deploy this stack to your default AWS account/region
  * `cdk diff`        compare deployed stack with current state
  * `cdk synth`       emits the synthesized CloudFormation template
+
+
+## Contributing
+Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
+
+Please make sure to update tests as appropriate.
+
+## License
+[MIT](https://choosealicense.com/licenses/mit/)
