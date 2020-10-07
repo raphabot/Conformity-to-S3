@@ -13,11 +13,10 @@ export class ConformityToS3Stack extends cdk.Stack {
   constructor(scope: cdk.Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    const bucket = new s3.Bucket(this, 'conformity-to-s3-bucket', {
-    });
+    const bucket = new s3.Bucket(this, 'conformity-to-s3-bucket');
 
     const key = new kms.Key(this, 'conformity-to-s3-key', {
-      description: 'CloudConformitySNSEncryptionKey',
+      description: 'Key used for the Conformity to SNS integration.',
       policy: new iam.PolicyDocument({
         statements: [ new iam.PolicyStatement({
           effect: iam.Effect.ALLOW,
@@ -39,7 +38,6 @@ export class ConformityToS3Stack extends cdk.Stack {
     })
 
     const topic = new sns.Topic(this, 'conformity-to-s3-topic', {
-      displayName: 'CloudConformityS3Topic',
       masterKey: key,
     }); 
     topic.addToResourcePolicy(new iam.PolicyStatement({
@@ -55,7 +53,9 @@ export class ConformityToS3Stack extends cdk.Stack {
       ]
     }));
 
-    const deadLetterQueue = new sqs.Queue(this, 'deadLetterQueue');
+    const deadLetterQueue = new sqs.Queue(this, 'conformity-to-s3-deadLetterQueue', {
+      encryptionMasterKey: key
+    });
 
     const func = new lambda.Function(this, 'conformity-to-s3-function', {
       runtime: lambda.Runtime.NODEJS_12_X,
